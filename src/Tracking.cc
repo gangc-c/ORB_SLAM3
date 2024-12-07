@@ -28,6 +28,7 @@
 #include "KannalaBrandt8.h"
 #include "MLPnPsolver.h"
 #include "GeometricTools.h"
+#include <opencv2/imgproc.hpp>
 
 #include <iostream>
 
@@ -1579,6 +1580,10 @@ Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &times
             cvtColor(mImGray,mImGray,cv::COLOR_RGBA2GRAY);
         else
             cvtColor(mImGray,mImGray,cv::COLOR_BGRA2GRAY);
+    }
+    // For YUV image format
+    else if (mImGray.channels() == 2) {
+        cvtColor(mImGray, mImGray, cv::COLOR_YUV2GRAY_YUYV);
     }
 
     if (mSensor == System::MONOCULAR)

@@ -398,7 +398,6 @@ Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const
 
 Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
 {
-
     {
         unique_lock<mutex> lock(mMutexReset);
         if(mbShutDown)
@@ -657,6 +656,78 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
     }
 
     f.close();
+
+
+  // Test
+  cout << endl << "Saving map point coordinates to " << filename << " ..." << endl;
+  cout << endl << "Number of maps is: " << mpAtlas->CountMaps() << endl;
+
+  Map* pActiveMap = mpAtlas->GetCurrentMap();
+  if(!pActiveMap) {
+    cout << endl << "There is no active map (pActiveMap is null)" << endl;
+    return;
+  }
+
+  const vector<MapPoint*> &vpMPs = pActiveMap->GetAllMapPoints();
+  const vector<MapPoint*> &vpRefMPs = pActiveMap->GetReferenceMapPoints();
+
+  if(vpMPs.empty()){
+    cout << endl << "Vector of map points vpMPs is empty!" << endl;
+    return;
+  }
+
+  // Use a set for fast lookup of reference frames
+  set<MapPoint*> spRefMPs(vpRefMPs.begin(), vpRefMPs.end());
+
+  cout << endl << "test ... !" << endl;
+  // const vector<MapPoint*> &vpRefMPs = pActiveMap->GetReferenceMapPoints();
+  //
+
+
+  // Get the output file stream in fixed-point format for map points
+  ofstream ff;
+  ff << "pos_x pos_y pos_z";
+  ff.open("3d_point_cloud.txt");
+  ff << fixed;
+
+  // Iterate over map points, skip "bad" ones and reference map points
+  for (size_t i=0, iend=vpMPs.size(); i<iend;i++)
+  {
+    if (vpMPs[i]->isBad() || spRefMPs.count(vpMPs[i])){
+      continue;
+    }
+    Eigen::Matrix<float,3,1> pos = vpMPs[i]->GetWorldPos();
+    ff << pos(0) << " " << pos(1) << " " << pos(2) << "";
+
+    // Record the timestamps
+    map<KeyFrame*, std::tuple<int,int>> mpObs = vpMPs[i]->GetObservations();
+    for(map<KeyFrame*, std::tuple<int,int>>::iterator it= mpObs.begin(), end=mpObs.end(); it!=end; ++it) {
+      ff << setprecision(6) << " " << it->first->mTimeStamp;
+    }
+    ff << endl;
+  }
+
+  ff.close();
+
+
+  // Get the output file stream in fixed-point format for reference map points
+  ofstream fff;
+  fff << "pos_x, pos_y, pos_z" << endl;
+  fff.open("ref_3d_point_cloud.txt");
+  fff << fixed;
+
+  // Iterate over reference map points, skip if bad
+  for (set<MapPoint*>::iterator sit=spRefMPs.begin(), send=spRefMPs.end(); sit!=send; sit++)
+  {
+    if((*sit)->isBad()){
+      continue;
+    }
+    Eigen::Matrix<float,3,1> pos = (*sit)->GetWorldPos();
+    fff << pos(0) << ", " << pos(1) << ", " << pos(2) << endl;
+  }
+
+  // Close the output stream
+  fff.close();
 }
 
 void System::SaveTrajectoryEuRoC(const string &filename)
@@ -1259,6 +1330,35 @@ void System::SaveTrajectoryKITTI(const string &filename)
              Rwc(2,0) << " " << Rwc(2,1)  << " " << Rwc(2,2) << " "  << twc(2) << endl;
     }
     f.close();
+}
+
+void System::SavePointCloud (const string &filename) {
+  cout << endl << "Saving map point coordinates to " << filename << " ..." << endl;
+  cout << endl << "Number of maps is: " << mpAtlas->CountMaps() << endl;
+
+  Map* pActiveMap = mpAtlas->GetCurrentMap();
+  if(!pActiveMap) {
+    cout << endl << "There is no active map (pActiveMap is null)" << endl;
+    return;
+  }
+
+  const vector<MapPoint*> &vpMPs = pActiveMap->GetAllMapPoints();
+
+  if(vpMPs.empty()){
+    cout << endl << "Vector of map points vpMPs is empty!" << endl;
+    return;
+  }
+
+  cout << endl << "test ... !" << endl;
+  // const vector<MapPoint*> &vpRefMPs = pActiveMap->GetReferenceMapPoints();
+  //
+  // Get the output file stream in fixed-point format for map points
+  ofstream f;
+  f << "pos_x, pos_y, pos_z";
+  f.open("3d_point_cloud.txt");
+  f << fixed;
+
+  f.close();
 }
 
 

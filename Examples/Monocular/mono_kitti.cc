@@ -150,6 +150,8 @@ int main(int argc, char **argv)
     // Save camera trajectory
     SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");    
 
+    // SLAM.SavePointCloud("3d_point_cloud.txt");
+
     return 0;
 }
 
